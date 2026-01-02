@@ -2,6 +2,21 @@
 
 A Ruby MCP (Model Context Protocol) server providing Claude Code-style tools for AI assistants. Includes 16 tools for file operations, shell commands, code search, LSP integration, and subagent orchestration.
 
+## Motivation
+
+Opus 4.5 is a capable model that doesn't require verbose system prompts and handholding unlike Sonnet. The default Claude Code system prompts are inefficient, consuming ~20k tokens of initial context.
+
+This matters because models like Opus noticeably degrade in intelligence when context window reaches 60-70% utilization. Saving 10k+ tokens significantly extends useful conversation length.
+
+**This project achieves ~10k token initial context** by:
+- Replacing bloated built-in tool definitions with minimal MCP equivalents
+- Using `--disallowed-tools` to disable Claude Code's verbose tool prompts
+- Allowing custom system prompts via `--system-prompt`
+
+![Context token comparison](image.png)
+
+An alternative approach uses [tweakcc](https://github.com/nicobailon/tweakcc) to patch tool prompts directly in the CLI binary. Ready to test [better prompts](https://github.com/restot/claude-code-better-system-prompts) This MCP approach achieves similar results without binary modification.
+
 ## Requirements
 
 - Ruby 3.x
@@ -73,7 +88,27 @@ Built-in LSP server detection for:
 - Go (gopls)
 - Rust (rust-analyzer)
 
-## Usage
+## Usage with Claude Code
+
+Use a shell alias to run Claude Code with MCP tools replacing the built-in tools:
+
+```bash
+alias ccd-v1-sysmcp='claude --disallowed-tools "Bash,Read,Write,Edit,Glob,Grep,Task,TaskOutput,TodoWrite,LSP,KillShell" --mcp-config $MCP/mcp-config.json --system-prompt "$(cat $PROMPT/my-sys-prompt-v1.md)"'
+```
+
+This approach:
+- Disables Claude Code's built-in tools via `--disallowed-tools`
+- Loads the MCP server tools as replacements via `--mcp-config`
+- Uses a custom system prompt via `--system-prompt`
+
+Set up your environment variables:
+
+```bash
+export MCP=/path/to/mcp-configs
+export PROMPT=/path/to/prompts
+```
+
+## Running Standalone
 
 Run directly:
 
@@ -98,6 +133,7 @@ The `Task` tool supports these Bedrock models:
 | `sonnet` (default) | `us.anthropic.claude-sonnet-4-20250514-v1:0` |
 | `opus` | `us.anthropic.claude-opus-4-20250514-v1:0` |
 | `haiku` | `us.anthropic.claude-haiku-4-20250514-v1:0` |
+
 
 ## License
 
