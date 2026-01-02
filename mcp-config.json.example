@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sys-tools": {
+      "command": "mise",
+      "args": ["exec", "ruby", "--", "ruby", "$PWD/sys-tools-mcp.rb"]
+    }
+  }
+}
