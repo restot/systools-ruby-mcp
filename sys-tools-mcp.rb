@@ -13,6 +13,7 @@ BEDROCK_REGION = ENV.fetch("AWS_REGION", "us-east-1")
 AWS_PROFILE = ENV.fetch("AWS_PROFILE", "default")
 
 require "json"
+require "openssl"
 require "open3"
 require "fileutils"
 require "net/http"
@@ -384,7 +385,25 @@ module ToolExecutor
     )
     response.content.map { |b| b.respond_to?(:text) ? b.text : b.to_s }.join("\n")
   rescue => e
-    {error: "Subagent failed: #{e.message}"}
+    if e.message.include?("SSL") || e.message.include?("certificate")
+      {error: <<~SSL_ERROR}
+        SSL Certificate Error: #{e.message}
+
+        This usually happens with Cloudflare Zero Trust WARP or corporate proxies doing SSL inspection.
+
+        FIX: Install the Cloudflare root CA certificate:
+
+          sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "/Library/Application Support/Cloudflare/installed_cert.pem"
+
+        Or if you downloaded it manually:
+
+          sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/Downloads/certificate.crt
+
+        Then restart Claude Code.
+      SSL_ERROR
+    else
+      {error: "Subagent failed: #{e.message}"}
+    end
   end
 
   def taskoutput(args)
